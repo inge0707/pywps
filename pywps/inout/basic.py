@@ -347,7 +347,7 @@ class IOHandler(object):
         return self._iohandler.stream
 
     @stream.setter
-    def stream(self, value):
+    def stream(self, value,):
         self._iohandler = StreamHandler(value, self)
         self._check_valid()
 
@@ -357,8 +357,8 @@ class IOHandler(object):
         return self._iohandler.url
 
     @url.setter
-    def url(self, value):
-        self._iohandler = UrlHandler(value, self)
+    def url(self, value, httrequest):
+        self._iohandler = UrlHandler(value, httrequest, self)
         self._check_valid()
 
     # FIXME: post_data is only related to url, this should be initialize with url setter
@@ -520,13 +520,19 @@ class StreamHandler(DataHandler):
 class UrlHandler(FileHandler):
     prop = 'url'
 
-    def __init__(self, value, ref):
+    def __init__(self, value, httprequest, ref):
         self._ref = weakref.ref(ref)
-        self._file = None
+        self._file = None        
         self._data = None
         self._stream = None
         self._url = value
         self._post_data = None
+        self._cookies = None
+        self._authorization = None
+
+        if httprequest is not None:
+            self._cookies = httprequest.cookies
+            self._authorization = httprequest.authorization
 
     @property
     def url(self):
@@ -547,7 +553,7 @@ class UrlHandler(FileHandler):
 
         # Create request
         try:
-            reference_file = self._openurl(self.url, self.post_data)
+            reference_file = self._openurl(self.url, self.post_data, cookies = self._cookies, auth = self._authorization)
             data_size = reference_file.headers.get('Content-Length', 0)
         except Exception as e:
             raise NoApplicableCode('File reference error: {}'.format(e))
@@ -586,7 +592,7 @@ class UrlHandler(FileHandler):
     @property
     def size(self):
         """Get content-length of URL without download"""
-        req = self._openurl(self.url)
+        req = self._openurl(self.url, cookies = self._cookies, auth = self._authorization)
         if req.ok:
             size = int(req.headers.get('content-length', '0'))
         else:
@@ -594,14 +600,14 @@ class UrlHandler(FileHandler):
         return size
 
     @staticmethod
-    def _openurl(href, data=None):
+    def _openurl(href, data=None, cookies=None, auth=None):
         """Open given href.
         """
         LOGGER.debug('Fetching URL {}'.format(href))
         if data is not None:
-            req = requests.post(url=href, data=data, stream=True)
+            req = requests.post(url=href, data=data, stream=True, cookies=cookies, auth=auth)
         else:
-            req = requests.get(url=href, stream=True)
+            req = requests.get(url=href, stream=True, cookies=cookies, auth=auth)
 
         return req
 
@@ -1027,7 +1033,7 @@ class ComplexInput(BasicIO, BasicComplex, IOHandler):
 
         return inpt.get('href')
 
-    def process(self, inpt):
+    def process(self, inpt, httprequest = None):
         """Subclass with the appropriate handler given the data input."""
         href = inpt.get('href', None)
         self.inpt = inpt
@@ -1039,7 +1045,7 @@ class ComplexInput(BasicIO, BasicComplex, IOHandler):
             else:
                 # No file download occurs here. The file content will
                 # only be retrieved when the file property is accessed.
-                self.url = self.url_handler(inpt)
+                self.url = self.url_handler(inpt, httprequest)
 
         else:
             self.data = inpt.get('data')

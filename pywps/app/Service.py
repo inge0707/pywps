@@ -122,7 +122,7 @@ class Service(object):
 
                 if isinstance(inpt, ComplexInput):
                     data_inputs[inpt.identifier] = self.create_complex_inputs(
-                        inpt, request_inputs)
+                        inpt, request_inputs, wps_request.http_request)
                 elif isinstance(inpt, LiteralInput):
                     data_inputs[inpt.identifier] = self.create_literal_inputs(
                         inpt, request_inputs)
@@ -145,7 +145,7 @@ class Service(object):
         wps_response = process.execute(wps_request, uuid)
         return wps_response
 
-    def create_complex_inputs(self, source, inputs):
+    def create_complex_inputs(self, source, inputs, http_request):
         """Create new ComplexInput as clone of original ComplexInput
         because of inputs can be more than one, take it just as Prototype.
 
@@ -173,7 +173,7 @@ class Service(object):
                     'mimeType')
 
             data_input.method = inpt.get('method', 'GET')
-            data_input.process(inpt)
+            data_input.process(inpt, http_request)
             outinputs.append(data_input)
 
         if len(outinputs) < source.min_occurs:
