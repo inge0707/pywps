@@ -358,7 +358,7 @@ class IOHandler(object):
 
     @url.setter
     def url(self, value, httrequest):
-        self._iohandler = UrlHandler(value, httrequest, self)
+        self._iohandler = UrlHandler(value = value, httrequest = httrequest, self = self) 
         self._check_valid()
 
     # FIXME: post_data is only related to url, this should be initialize with url setter
