@@ -1045,7 +1045,7 @@ class ComplexInput(BasicIO, BasicComplex, IOHandler):
             else:
                 # No file download occurs here. The file content will
                 # only be retrieved when the file property is accessed.
-                self._iohandler = UrlHandler(value = self.url_handler(inpt), httrequest = httprequest) 
+                self._iohandler = UrlHandler(value = self.url_handler(inpt), httprequest = httprequest, ref = None) 
                 self._check_valid()
 
         else:
