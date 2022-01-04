@@ -1021,7 +1021,7 @@ class ComplexInput(BasicIO, BasicComplex, IOHandler):
 
         return tmp_file
 
-    def url_handler(self, inpt):
+    def url_handler(self, inpt, httprequest = None):
         # That could possibly go into the data property...
         if inpt.get('method') == 'POST':
             if 'body' in inpt:
