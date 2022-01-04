@@ -1021,7 +1021,7 @@ class ComplexInput(BasicIO, BasicComplex, IOHandler):
 
         return tmp_file
 
-    def url_handler(self, inpt, httprequest = None):
+    def url_handler(self, inpt):
         # That could possibly go into the data property...
         if inpt.get('method') == 'POST':
             if 'body' in inpt:
@@ -1045,7 +1045,8 @@ class ComplexInput(BasicIO, BasicComplex, IOHandler):
             else:
                 # No file download occurs here. The file content will
                 # only be retrieved when the file property is accessed.
-                self.url = self.url_handler(inpt, httprequest)
+                self._iohandler = UrlHandler(value = self.url_handler(inpt), httrequest = httprequest) 
+                self._check_valid()
 
         else:
             self.data = inpt.get('data')
