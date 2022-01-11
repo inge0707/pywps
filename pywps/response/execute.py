@@ -186,7 +186,7 @@ class ExecuteResponse(WPSResponse):
             data["status"] = self._process_succeeded()
             # Process outputs XML
             for o in self.outputs:
-                jsonToSend = o.json
+                jsonToSend = self.outputs[o].json 
                 if jsonToSend.type == 'reference':
                     endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
                     endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
