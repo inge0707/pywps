@@ -187,11 +187,11 @@ class ExecuteResponse(WPSResponse):
             # Process outputs XML
             for o in self.outputs:
                 jsonToSend = self.outputs[o].json 
-                if jsonToSend.type == 'reference':
+                if jsonToSend["type"] == 'reference':
                     endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
                     endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
                     endpointPrefix = self.wps_request.http_request.headers.get("X-Forwarded-Prefix")
-                    jsonToSend.href = endpointScheme + "://" + endpointHost.pop() + endpointPrefix + "/" + o.href
+                    jsonToSend["href"] = endpointScheme + "://" + endpointHost.pop() + endpointPrefix + "/" + jsonToSend["href"]
                 data["outputs"].append(jsonToSend) 
                 #data["outputs"] = [self.outputs[o].json for o in self.outputs]
         # lineage: add optional lineage when process has finished
