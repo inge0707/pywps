@@ -185,6 +185,7 @@ class ExecuteResponse(WPSResponse):
         elif self.status == WPS_STATUS.SUCCEEDED:
             data["status"] = self._process_succeeded()
             # Process outputs XML
+            data["outputs"] = []
             for o in self.outputs:
                 jsonToSend = self.outputs[o].json 
                 if jsonToSend["type"] == 'reference':
