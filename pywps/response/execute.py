@@ -185,7 +185,14 @@ class ExecuteResponse(WPSResponse):
         elif self.status == WPS_STATUS.SUCCEEDED:
             data["status"] = self._process_succeeded()
             # Process outputs XML
-            data["outputs"] = [self.outputs[o].json for o in self.outputs]
+            for o in self.outputs:
+                if o.type == 'reference':
+                    endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
+                    endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
+                    endpointPrefix = self.wps_request.http_request.headers.get("X-Forwarded-Prefix")
+                    o.href = endpointScheme + "://" + endpointHost.pop() + endpointPrefix + "/" + o.href
+                data["outputs"].append(o.json) 
+                #data["outputs"] = [self.outputs[o].json for o in self.outputs]
         # lineage: add optional lineage when process has finished
         if self.status in [WPS_STATUS.SUCCEEDED, WPS_STATUS.FAILED]:
             # DataInputs and DataOutputs definition XML if lineage=true
