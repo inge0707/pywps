@@ -157,7 +157,7 @@ class ExecuteResponse(WPSResponse):
     @property
     def json(self):
         data = {}
-        data["language"] = self.wps_request.http_request.language
+        data["language"] = self.wps_request.language
         data["service_instance"] = self._get_serviceinstance()
         data["process"] = self.process.json
 
