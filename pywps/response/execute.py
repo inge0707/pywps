@@ -165,7 +165,7 @@ class ExecuteResponse(WPSResponse):
             if self.process.status_location:
                 endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-For")
                 endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
-                url = endpointScheme + "://" + endpointHost + "/" + self.process.status_url
+                url = endpointScheme + "://" + endpointHost[0] + "/" + self.process.status_url
                 data["status_location"] = url
 
         if self.status == WPS_STATUS.ACCEPTED:
