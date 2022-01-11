@@ -141,7 +141,7 @@ class ExecuteResponse(WPSResponse):
     def _get_serviceinstance(self):
 
         #url = config.get_config_value("server", "url")
-        endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-For")
+        endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
         endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
 
         url = endpointScheme + "://" + endpointHost.pop() + "/pywps"
@@ -163,7 +163,7 @@ class ExecuteResponse(WPSResponse):
 
         if self.store_status_file:
             if self.process.status_location:
-                endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-For")
+                endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
                 endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
                 url = endpointScheme + "://" + endpointHost.pop() + "/" + self.process.status_url
                 data["status_location"] = url
