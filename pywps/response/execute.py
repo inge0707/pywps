@@ -140,7 +140,11 @@ class ExecuteResponse(WPSResponse):
 
     def _get_serviceinstance(self):
 
-        url = config.get_config_value("server", "url")
+        #url = config.get_config_value("server", "url")
+        endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-For")
+        endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
+
+        url = endpointScheme + "://" + endpointHost + "/pywps"
         params = {'request': 'GetCapabilities', 'service': 'WPS'}
 
         url_parts = list(urlparse.urlparse(url))
@@ -153,13 +157,16 @@ class ExecuteResponse(WPSResponse):
     @property
     def json(self):
         data = {}
-        data["language"] = self.wps_request.language
+        data["language"] = self.wps_request.http_request.language
         data["service_instance"] = self._get_serviceinstance()
         data["process"] = self.process.json
 
         if self.store_status_file:
             if self.process.status_location:
-                data["status_location"] = self.process.status_url
+                endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-For")
+                endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
+                url = endpointScheme + "://" + endpointHost + "/" + self.process.status_url
+                data["status_location"] = url
 
         if self.status == WPS_STATUS.ACCEPTED:
             self.message = 'PyWPS Process {} accepted'.format(self.process.identifier)
