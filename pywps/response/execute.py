@@ -144,7 +144,7 @@ class ExecuteResponse(WPSResponse):
         endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-For")
         endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
 
-        url = endpointScheme + "://" + endpointHost + "/pywps"
+        url = endpointScheme + "://" + endpointHost[0] + "/pywps"
         params = {'request': 'GetCapabilities', 'service': 'WPS'}
 
         url_parts = list(urlparse.urlparse(url))
