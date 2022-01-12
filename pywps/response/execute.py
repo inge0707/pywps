@@ -138,14 +138,17 @@ class ExecuteResponse(WPSResponse):
         })
         return data
 
-    def _get_serviceinstance(self):
-
-        path = config.get_config_value("server", "path")
+    def _getURL(self):
         endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
         endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
         endpointPrefix = self.wps_request.http_request.headers.get("X-Forwarded-Prefix")
 
-        url = endpointScheme + "://" + endpointHost.pop() + endpointPrefix + path
+        return endpointScheme + "://" + endpointHost.pop() + endpointPrefix
+    def _get_serviceinstance(self):
+
+        path = config.get_config_value("server", "path")
+        url = self._getURL() + path
+
         params = {'request': 'GetCapabilities', 'service': 'WPS'}
 
         url_parts = list(urlparse.urlparse(url))
@@ -164,11 +167,7 @@ class ExecuteResponse(WPSResponse):
 
         if self.store_status_file:
             if self.process.status_location:
-                endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
-                endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
-                endpointPrefix = self.wps_request.http_request.headers.get("X-Forwarded-Prefix")
-
-                url = endpointScheme + "://" + endpointHost.pop() + endpointPrefix + "/" + self.process.status_url
+                url = self._getURL() + self.process.status_url
                 data["status_location"] = url
 
         if self.status == WPS_STATUS.ACCEPTED:
@@ -189,10 +188,7 @@ class ExecuteResponse(WPSResponse):
             for o in self.outputs:
                 jsonToSend = self.outputs[o].json 
                 if jsonToSend["type"] == 'reference':
-                    endpointHost = self.wps_request.http_request.headers.getlist("X-Forwarded-Host")
-                    endpointScheme = self.wps_request.http_request.headers.get("X-Forwarded-Proto")
-                    endpointPrefix = self.wps_request.http_request.headers.get("X-Forwarded-Prefix")
-                    jsonToSend["href"] = endpointScheme + "://" + endpointHost.pop() + endpointPrefix + "/" + jsonToSend["href"]
+                    jsonToSend["href"] = self._getURL() + jsonToSend["href"]
                 data["outputs"].append(jsonToSend) 
                 #data["outputs"] = [self.outputs[o].json for o in self.outputs]
         # lineage: add optional lineage when process has finished
