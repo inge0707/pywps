@@ -7,13 +7,13 @@
 Reads the PyWPS configuration file
 """
 
-import logging
-import sys
-import os
-import tempfile
-import pywps
-
 import configparser
+import logging
+import os
+import sys
+import tempfile
+
+import pywps
 
 __author__ = "Calin Ciociu"
 
@@ -27,6 +27,36 @@ LOGGER = logging.getLogger("PYWPS")
 wps_strict = True
 
 
+class EnvInterpolation(configparser.BasicInterpolation):
+    """
+    Configuration parser class to allow env variable interpolation.
+
+    With this interpolator it is possible to use env variables as
+    part of the values in an cfg file.
+
+    Example (given an env variable HOSTNAME=localhost):
+
+    [server]
+    url = http://${HOSTNAME}/wps
+
+
+    ==> http://localhost/wps
+
+
+    This code is an adaption from the configuation parsing in the pycsw
+    project.
+    See also
+    - https://github.com/geopython/pycsw/blob/3.0.0-alpha3/pycsw/core/util.py
+    - https://stackoverflow.com/a/49529659
+
+    """
+
+    def before_get(self, parser, section, option, value, defaults):
+        """Expand env variables when returning values."""
+        value = super().before_get(parser, section, option, value, defaults)
+        return os.path.expandvars(value)
+
+
 def get_config_value(section, option, default_value=''):
     """Get desired value from  configuration files
 
@@ -34,6 +64,8 @@ def get_config_value(section, option, default_value=''):
     :type section: string
     :param option: option in the section
     :type option: string
+    :param default_value: default value for configuration
+    :type default_value: string
     :returns: value found in the configuration file
     """
 
@@ -58,6 +90,7 @@ def get_config_value(section, option, default_value=''):
 
 def load_configuration(cfgfiles=None):
     """Load PyWPS configuration from configuration files.
+
     The later configuration file in the array overwrites configuration
     from the first.
 
@@ -67,7 +100,7 @@ def load_configuration(cfgfiles=None):
     global CONFIG
 
     LOGGER.info('loading configuration')
-    CONFIG = configparser.ConfigParser(os.environ)
+    CONFIG = configparser.ConfigParser(os.environ, interpolation=EnvInterpolation())
 
     LOGGER.debug('setting default values')
     CONFIG.add_section('server')
@@ -191,15 +224,17 @@ def _check_config():
 
 
 def _get_default_config_files_location():
-    """Get the locations of the standard configuration files. These are
+    """Get the locations of the standard configuration files.
+
+    These are:
     Unix/Linux:
         1. `/etc/pywps.cfg`
         2. `$HOME/.pywps.cfg`
     Windows:
         1. `pywps\\etc\\default.cfg`
-
     Both:
         1. `$PYWPS_CFG environment variable`
+
     :returns: configuration files
     :rtype: list of strings
     """

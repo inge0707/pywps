@@ -3,17 +3,20 @@
 # licensed under MIT, Please consult LICENSE.txt for details     #
 ##################################################################
 
+import logging
+
 import pywps.configuration as config
-from pywps.processing.basic import MultiProcessing
-from pywps.processing.scheduler import Scheduler
+
 # api only
 from pywps.processing.basic import Processing  # noqa: F401
+from pywps.processing.basic import DetachProcessing, MultiProcessing
 from pywps.processing.job import Job  # noqa: F401
+from pywps.processing.scheduler import Scheduler
 
-import logging
 LOGGER = logging.getLogger("PYWPS")
 
 MULTIPROCESSING = 'multiprocessing'
+DETACHPROCESSING = 'detachprocessing'
 SCHEDULER = 'scheduler'
 DEFAULT = MULTIPROCESSING
 
@@ -29,6 +32,9 @@ def Process(process, wps_request, wps_response):
     LOGGER.info("Processing mode: {}".format(mode))
     if mode == SCHEDULER:
         process = Scheduler(process, wps_request, wps_response)
+    elif mode == DETACHPROCESSING:
+        process = DetachProcessing(process, wps_request, wps_response)
     else:
         process = MultiProcessing(process, wps_request, wps_response)
+
     return process

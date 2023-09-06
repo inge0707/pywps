@@ -3,22 +3,41 @@
 # licensed under MIT, Please consult LICENSE.txt for details     #
 ##################################################################
 
-"""Literaltypes are used for LiteralInputs, to make sure, input data are OK
-"""
-from urllib.parse import urlparse
-from dateutil.parser import parse as date_parser
+"""Literaltypes are used for LiteralInputs, to make sure input data are OK."""
 import datetime
-from pywps.exceptions import InvalidParameterValue
-from pywps.validator.allowed_value import RANGECLOSURETYPE
-from pywps.validator.allowed_value import ALLOWEDVALUETYPE
-
 import logging
+from urllib.parse import urlparse
+
+from dateutil.parser import parse as date_parser
+
+from pywps.exceptions import InvalidParameterValue
+from pywps.validator.allowed_value import ALLOWEDVALUETYPE, RANGECLOSURETYPE
+
 LOGGER = logging.getLogger('PYWPS')
 
-LITERAL_DATA_TYPES = ('float', 'boolean', 'integer', 'string',
-                      'positiveInteger', 'anyURI', 'time', 'date', 'dateTime',
-                      'scale', 'angle',
-                      'nonNegativeInteger', None)
+LITERAL_DATA_TYPES = dict()
+"""
+Store converter functions
+"""
+
+
+# Decorator to use on converter function
+def register_convert_type(name):
+    """Decorator to register a converter
+
+    >>> @register_convert_type('type_name')
+    ... def convert_my_stuff(value):
+    ...    # convert value ...
+    ...    return value
+    """
+
+    def _register_convert_type(function):
+        global LITERAL_DATA_TYPES
+        LITERAL_DATA_TYPES[name] = function
+        return function
+
+    return _register_convert_type
+
 
 # currently we are supporting just ^^^ data types, feel free to add support for
 # more
@@ -170,61 +189,26 @@ class AllowedValue(object):
 ALLOWED_VALUES_TYPES = (AllowedValue, AnyValue, NoValue, ValuesReference)
 
 
-def get_converter(convertor):
-    """function for decoration of convert
-    """
-
-    def decorator_selector(data_type, data):
-        convert = None
-        if data_type in LITERAL_DATA_TYPES:
-            if data_type == 'string':
-                convert = convert_string
-            elif data_type == 'integer':
-                convert = convert_integer
-            elif data_type == 'float':
-                convert = convert_float
-            elif data_type == 'boolean':
-                convert = convert_boolean
-            elif data_type == 'positiveInteger':
-                convert = convert_positiveInteger
-            elif data_type == 'anyURI':
-                convert = convert_anyURI
-            elif data_type == 'time':
-                convert = convert_time
-            elif data_type == 'date':
-                convert = convert_date
-            elif data_type == 'dateTime':
-                convert = convert_datetime
-            elif data_type == 'scale':
-                convert = convert_scale
-            elif data_type == 'angle':
-                convert = convert_angle
-            elif data_type == 'nonNegativeInteger':
-                convert = convert_positiveInteger
-            else:
-                raise InvalidParameterValue(
-                    "Invalid data_type value of LiteralInput "
-                    "set to '{}'".format(data_type))
-        try:
-            return convert(data)
-        except ValueError:
-            raise InvalidParameterValue(
-                "Could not convert value '{}' to format '{}'".format(
-                    data, data_type))
-
-    return decorator_selector
-
-
-@get_converter
 def convert(data_type, data):
     """Convert data to target value
     """
 
-    return data_type, data
+    convert = LITERAL_DATA_TYPES.get(data_type, None)  # noqa
+    if convert is None:
+        raise InvalidParameterValue(
+            "Invalid data_type value of LiteralInput "
+            "set to '{}'".format(data_type))
+    try:
+        return convert(data)
+    except ValueError:
+        raise InvalidParameterValue(
+            "Could not convert value '{}' to format '{}'".format(
+                data, data_type))
 
 
+@register_convert_type('boolean')
 def convert_boolean(inpt):
-    """Return boolean value from input boolean input
+    """Return boolean value from input boolean input.
 
     >>> convert_boolean('1')
     True
@@ -248,13 +232,14 @@ def convert_boolean(inpt):
                 val = False
             else:
                 val = True
-        except Exception:
+        except (ValueError, TypeError):
             val = True
     return val
 
 
+@register_convert_type('float')
 def convert_float(inpt):
-    """Return float value from inpt
+    """Return float value from input.
 
     >>> convert_float('1')
     1.0
@@ -263,8 +248,9 @@ def convert_float(inpt):
     return float(inpt)
 
 
+@register_convert_type('integer')
 def convert_integer(inpt):
-    """Return integer value from input inpt
+    """Return integer value from input input.
 
     >>> convert_integer('1.0')
     1
@@ -273,8 +259,9 @@ def convert_integer(inpt):
     return int(float(inpt))
 
 
+@register_convert_type('string')
 def convert_string(inpt):
-    """Return string value from input lit_input
+    """Return string value from input lit_input.
 
     >>> convert_string(1)
     '1'
@@ -282,8 +269,10 @@ def convert_string(inpt):
     return str(inpt)
 
 
+@register_convert_type('nonNegativeInteger')
+@register_convert_type('positiveInteger')
 def convert_positiveInteger(inpt):
-    """Return value of input"""
+    """Return value of input."""
 
     inpt = convert_integer(inpt)
     if inpt < 0:
@@ -293,8 +282,9 @@ def convert_positiveInteger(inpt):
         return inpt
 
 
+@register_convert_type('anyURI')
 def convert_anyURI(inpt):
-    """Return value of input
+    """Return value of input.
 
     :rtype: url components
     """
@@ -308,11 +298,11 @@ def convert_anyURI(inpt):
             'The value "{}" does not seem to be of type anyURI'.format(inpt))
 
 
+@register_convert_type('time')
 def convert_time(inpt):
-    """Return value of input
-    time formating assumed according to ISO standard:
+    """Return value of input time formatting assumed according to ISO standard.
 
-    https://www.w3.org/TR/xmlschema-2/#time
+    * https://www.w3.org/TR/xmlschema-2/#time
 
     Examples: 12:00:00
 
@@ -323,11 +313,11 @@ def convert_time(inpt):
     return inpt
 
 
+@register_convert_type('date')
 def convert_date(inpt):
-    """Return value of input
-    date formating assumed according to ISO standard:
+    """Return value of input date formatting assumed according to ISO standard.
 
-    https://www.w3.org/TR/xmlschema-2/#date
+    * https://www.w3.org/TR/xmlschema-2/#date
 
     Examples: 2016-09-20
 
@@ -338,9 +328,9 @@ def convert_date(inpt):
     return inpt
 
 
+@register_convert_type('dateTime')
 def convert_datetime(inpt):
-    """Return value of input
-    dateTime formating assumed according to ISO standard:
+    """Return value of input dateTime formatting assumed according to ISO standard.
 
     * http://www.w3.org/TR/NOTE-datetime
     * https://www.w3.org/TR/xmlschema-2/#dateTime
@@ -360,12 +350,14 @@ def convert_datetime(inpt):
     return inpt
 
 
+@register_convert_type('scale')
 def convert_scale(inpt):
     """Return value of input"""
 
     return convert_float(inpt)
 
 
+@register_convert_type('angle')
 def convert_angle(inpt):
     """Return value of input
 
@@ -377,7 +369,7 @@ def convert_angle(inpt):
 
 
 def make_allowedvalues(allowed_values):
-    """convert given value list to AllowedValue objects
+    """Convert given value list to AllowedValue objects.
 
     :return: list of pywps.inout.literaltypes.AllowedValue
     """
@@ -417,8 +409,7 @@ def make_allowedvalues(allowed_values):
 
 
 def is_anyvalue(value):
-    """Check for any value object of given value
-    """
+    """Check for any value object of given value."""
 
     is_av = False
 
@@ -435,8 +426,7 @@ def is_anyvalue(value):
 
 
 def is_values_reference(value):
-    """Check for ValuesReference in given value
-    """
+    """Check for ValuesReference in given value."""
 
     check = False
 
